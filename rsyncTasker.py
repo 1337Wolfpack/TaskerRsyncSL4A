@@ -539,8 +539,8 @@ if __name__ == "__main__":
 		try:
 			options, source, destination = extras['%options'], extras['%source'], extras['%destination']
 		except:
-			#default options for testing
-			options, source, destination = '-tr', '/sdcard/scripts', '/sdcard/scripts' + str(random.randint(1, 100))
+			logError('could not get variables from tasker.')
+			#options, source, destination = '-tr', '/sdcard/scripts', '/sdcard/scripts' + str(random.randint(1, 100))
 		sys.exit(main([options, source, destination]))
 	else:
 		#command line behaviour still usable I used on windows and linux
