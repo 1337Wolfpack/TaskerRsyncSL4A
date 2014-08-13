@@ -54,23 +54,23 @@ class Options:
 		if os.name == "nt":
 			self.case_sensitivity = re.I
 
-def visit(Options, dirname, names):
+def visit(options, dirname, names):
 	"""Copy files names from sink_root + (dirname - sink_root) to target_root + (dirname - sink_root)"""
-	if os.path.split(Options.sink_root)[1]: 
-		dirname = dirname[len(Options.sink_root) + 1:]
+	if os.path.split(options.sink_root)[1]: 
+		dirname = dirname[len(options.sink_root) + 1:]
 	else:
-		dirname = dirname[len(Options.sink_root):]
-	target_dir = os.path.join(Options.target_root, dirname)
+		dirname = dirname[len(options.sink_root):]
+	target_dir = os.path.join(options.target_root, dirname)
 	if not os.path.isdir(target_dir):
-		makeDir(Options, target_dir)
-	sink_dir = os.path.join(Options.sink_root, dirname)
+		makeDir(options, target_dir)
+	sink_dir = os.path.join(options.sink_root, dirname)
 
 	filters = []
-	if Options.cvs_ignore:
+	if options.cvs_ignore:
 		ignore = os.path.join(sink_dir, ".cvsignore")
 		if os.path.isfile(ignore):
 			filters = convertPatterns(ignore, "-")
-	filters = filters + Options.filters
+	filters = filters + options.filters
 
 	names_excluded = []
 	if filters:
@@ -83,14 +83,14 @@ def visit(Options, dirname, names):
 			if os.path.isdir(os.path.join(sink_dir, name)):
 				path = path + "/"
 			for filter in filters:
-				if re.search(filter[1], path, Options.case_sensitivity):
+				if re.search(filter[1], path, options.case_sensitivity):
 					if filter[0] == '-':
 						sink = os.path.join(sink_dir, name)
-						if Options.delete_from_source:
+						if options.delete_from_source:
 							if os.path.isfile(sink):
-								removeFile(Options, sink)
+								removeFile(options, sink)
 							elif os.path.isdir(sink):
-								removeDir(Options, sink)
+								removeDir(options, sink)
 							else:
 								logError("Sink %s is neither a file nor a folder (skip removal)" % sink)
 						names_excluded += [names[name_index]]
@@ -101,17 +101,17 @@ def visit(Options, dirname, names):
 						break
 			name_index = name_index + 1
 
-	if Options.delete and os.path.isdir(target_dir):
+	if options.delete and os.path.isdir(target_dir):
 		# Delete files and folder in target not present in filtered sink.
 		for name in os.listdir(target_dir):
-			if not Options.delete_excluded and name in names_excluded:
+			if not options.delete_excluded and name in names_excluded:
 				continue
 			if not name in names:
 				target = os.path.join(target_dir, name)
 				if os.path.isfile(target):
-					removeFile(Options, target)
+					removeFile(options, target)
 				elif os.path.isdir(target):
-					removeDir(Options, target)
+					removeDir(options, target)
 				else:
 					pass
 
@@ -125,12 +125,12 @@ def visit(Options, dirname, names):
 			if os.path.isfile(sink):
 				if os.path.isfile(target):
 					# file-file
-					if shouldUpdate(Options, sink, target):
-						updateFile(Options, sink, target)
+					if shouldUpdate(options, sink, target):
+						updateFile(options, sink, target)
 				elif os.path.isdir(target):
 					# file-folder
-					removeDir(Options, target)
-					copyFile(Options, sink, target)
+					removeDir(options, target)
+					copyFile(options, sink, target)
 				else:
 					# file-???
 					logError("Target %s is neither a file nor folder (skip update)" % sink)
@@ -138,26 +138,26 @@ def visit(Options, dirname, names):
 			elif os.path.isdir(sink):
 				if os.path.isfile(target):
 					# folder-file
-					removeFile(Options, target)
-					makeDir(Options, target)
+					removeFile(options, target)
+					makeDir(options, target)
 			else:
 				# ???-xxx
 				logError("Sink %s is neither a file nor a folder (skip update)" % sink)
 
-		elif not Options.existing:
+		elif not options.existing:
 			# When target dont exist:
 			if os.path.isfile(sink):
 				# file
-				copyFile(Options, sink, target)
+				copyFile(options, sink, target)
 			elif os.path.isdir(sink):
 				# folder
-				makeDir(Options, target)
+				makeDir(options, target)
 			else:
 				logError("Sink %s is neither a file nor a folder (skip update)" % sink)
 
 
-def log(Options, message):
-	if not Options.quiet:
+def log(options, message):
+	if not options.quiet:
 		try:
 			print message
 		except UnicodeEncodeError:
@@ -171,7 +171,7 @@ def logError(message):
 		sys.stderr.write(message.encode("utf8") + "\n")
 
 
-def shouldUpdate(Options, sink, target):
+def shouldUpdate(options, sink, target):
 	try:
 		sink_st = os.stat(sink)
 		sink_sz = sink_st.st_size
@@ -188,24 +188,24 @@ def shouldUpdate(Options, sink, target):
 		logError("Fail to retrieve information about target %s (skip update)" % target)
 		return 0
 
-	if Options.update:
-		return target_mt < sink_mt - Options.modify_window
+	if options.update:
+		return target_mt < sink_mt - options.modify_window
 
-	if Options.ignore_time:
+	if options.ignore_time:
 		return 1
 
 	if target_sz != sink_sz:
 		return 1
 
-	if Options.size_only:
+	if options.size_only:
 		return 0
 
-	return abs(target_mt - sink_mt) > Options.modify_window
+	return abs(target_mt - sink_mt) > options.modify_window
 
 
-def copyFile(Options, sink, target):
-	log(Options, "copy: %s to: %s" % (sink, target))
-	if not Options.dry_run:
+def copyFile(options, sink, target):
+	log(options, "copy: %s to: %s" % (sink, target))
+	if not options.dry_run:
 		try:
 			shutil.copyfile(sink, target)
 			error = shutil.copyfile(sink, target)
@@ -213,7 +213,7 @@ def copyFile(Options, sink, target):
 			logError("Fail to copy %s" % sink)
 			logError("shitul error : %s" % error)
 
-		if Options.time:
+		if options.time:
 			try:
 				s = os.stat(sink)
 				os.utime(target, (s.st_atime, s.st_mtime));
@@ -221,9 +221,9 @@ def copyFile(Options, sink, target):
 				logError("Fail to copy timestamp of %s" % sink)
 
 
-def updateFile(Options, sink, target):
-	log(Options, "update: %s to: %s" % (sink, target))
-	if not Options.dry_run:
+def updateFile(options, sink, target):
+	log(options, "update: %s to: %s" % (sink, target))
+	if not options.dry_run:
 		# Read only and hidden and system files can not be overridden.
 		try:
 			try:
@@ -236,7 +236,7 @@ def updateFile(Options, sink, target):
 				pass
 
 			shutil.copyfile(sink, target)
-			if Options.time:
+			if options.time:
 				try:
 					s = os.stat(sink)
 					os.utime(target, (s.st_atime, s.st_mtime));
@@ -257,10 +257,10 @@ def prepareRemoveFile(path):
 		os.chmod(path, stat.S_IWUSR)
 
 
-def removeFile(Options, target):
+def removeFile(options, target):
 	# Read only files could not be deleted.
-	log(Options, "remove: %s" % target)
-	if not Options.dry_run:
+	log(options, "remove: %s" % target)
+	if not options.dry_run:
 		try:
 			try:
 				prepareRemoveFile(target)
@@ -274,9 +274,9 @@ def removeFile(Options, target):
 
 
 
-def makeDir(Options, target):
-	log(Options, "make dir: %s" % target)
-	if not Options.dry_run:
+def makeDir(options, target):
+	log(options, "make dir: %s" % target)
+	if not options.dry_run:
 		try:
 			os.makedirs(target)
 		except:
@@ -298,10 +298,10 @@ def OnRemoveDirError(func, path, excinfo):
 	logError("Fail to remove %s" % path)
 
 
-def removeDir(Options, target):
+def removeDir(options, target):
 	# Read only directory could not be deleted.
-	log(Options, "remove dir: %s" % target)
-	if not Options.dry_run:
+	log(options, "remove dir: %s" % target)
+	if not options.dry_run:
 		prepareRemoveDir(target)
 		try:
 			shutil.rmtree(target, False, OnRemoveDirError)
@@ -422,49 +422,49 @@ def printVersion():
 
 
 def main(args):
-	Options = Options()
+	options = Options()
 	print "test with args %s" % (args)
 
 	opts, args = getopt.getopt(args, "qrRntuCIh", ["quiet", "recursive", "relative", "dry-run", "time", "update", "cvs-ignore", "ignore-times", "help", "delete", "delete-excluded", "delete-from-source", "existing", "size-only", "modify-window=", "exclude=", "exclude-from=", "include=", "include-from=", "version"])
 	for o, v in opts:
 		if o in ["-q", "--quiet"]:
-			Options.quiet = 1
+			options.quiet = 1
 		if o in ["-r", "--recursive"]:
 			print "found option recursive"
-			Options.recursive = 1
+			options.recursive = 1
 		if o in ["-R", "--relative"]:
-			Options.relative = 1
+			options.relative = 1
 		elif o in ["-n", "--dry-run"]:
-			Options.dry_run = 1
+			options.dry_run = 1
 		elif o in ["-t", "--times"]: 
-			Options.time = 1
+			options.time = 1
 		elif o in ["-u", "--update"]:
-			Options.update = 1
+			options.update = 1
 		elif o in ["-C", "--cvs-ignore"]:
-			Options.cvs_ignore = 1
+			options.cvs_ignore = 1
 		elif o in ["-I", "--ignore-time"]:
-			Options.ignore_time = 1
+			options.ignore_time = 1
 		elif o == "--delete":
-			Options.delete = 1
+			options.delete = 1
 		elif o == "--delete-excluded":
-			Options.delete = 1
-			Options.delete_excluded = 1
+			options.delete = 1
+			options.delete_excluded = 1
 		elif o == "--delete-from-source":
-			Options.delete_from_source = 1
+			options.delete_from_source = 1
 		elif o == "--size-only":
-			Options.size_only = 1
+			options.size_only = 1
 		elif o == "--modify-window":
-			Options.modify_window = int(v)
+			options.modify_window = int(v)
 		elif o == "--existing":
-			Options.existing = 1
+			options.existing = 1
 		elif o == "--exclude":
-			Options.filters = Options.filters + [convertPattern(v, "-")]
+			options.filters = options.filters + [convertPattern(v, "-")]
 		elif o == "--exclude-from":
-			Options.filters = Options.filters + convertPatterns(v, "-")
+			options.filters = options.filters + convertPatterns(v, "-")
 		elif o == "--include":
-			Options.filters = Options.filters + [convertPattern(v, "+")]
+			options.filters = options.filters + [convertPattern(v, "+")]
 		elif o == "--include-from":
-			Options.filters = Options.filters + convertPatterns(v, "+")
+			options.filters = options.filters + convertPatterns(v, "+")
 		elif o == "--version":
 			printVersion()
 			return 0
@@ -484,7 +484,7 @@ def main(args):
 		if os.path.__dict__.has_key("supports_unicode_filenames") and os.path.supports_unicode_filenames:
 			target_root = unicode(target_root, 'utf-8')
 	finally:
-		Options.target_root = target_root
+		options.target_root = target_root
 
 	sinks = glob.glob(args[0])
 	if not sinks:
@@ -511,25 +511,25 @@ def main(args):
 		sink_families[sink_root] = sink_families[sink_root] + [sink_name]
 
 	for sink_root in sink_families.keys():
-		if Options.relative:
-			Options.sink_root = ""
+		if options.relative:
+			options.sink_root = ""
 		else:
-			Options.sink_root = sink_root
+			options.sink_root = sink_root
 
 		global y 
 		y = sink_root
 		files = filter(lambda x: os.path.isfile(os.path.join(y, x)), sink_families[sink_root])
 		if files:
-			visit(Options, sink_root, files)
+			visit(options, sink_root, files)
 
 		y = sink_root
 		folders = filter(lambda x: os.path.isdir(os.path.join(y, x)), sink_families[sink_root])
 		for folder in folders:
 			folder_path = os.path.join(sink_root, folder)
-			if not Options.recursive:
-				visit(Options, folder_path, os.listdir(folder_path))
+			if not options.recursive:
+				visit(options, folder_path, os.listdir(folder_path))
 			else:
-				os.path.walk(folder_path, visit, Options)
+				os.path.walk(folder_path, visit, options)
 	return 0
 
 
