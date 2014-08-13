@@ -37,7 +37,7 @@ if __name__ == "__main__":
 		except:
 			#default options for testing
 			options, source, destination = '-tr', '/sdcard/scripts', '/sdcard/scripts' + str(random.randint(1, 100))
-		sys.exit(main([options, source, destination])
+		sys.exit(main([options, source, destination]))
 	else:
 		#command line behaviour still usable I used on windows and linux
 		sys.exit(main(sys.argv[1:]))
