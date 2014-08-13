@@ -29,23 +29,7 @@ except :
     isAd = False
 
 
-if __name__ == "__main__":
-	
-	if isAndroid == True:
-		try:
-			options, source, destination = extras['%options'], extras['%source'], extras['%destination']
-		except:
-			#default options for testing
-			options, source, destination = '-tr', '/sdcard/scripts', '/sdcard/scripts' + str(random.randint(1, 100))
-		sys.exit(main([options, source, destination]))
-	else:
-		#command line behaviour still usable I used on windows and linux
-		sys.exit(main(sys.argv[1:]))
 
-class rsync(object):
-	def	__init__(self, args):
-	    main(args)
-	
 
 class Options:
 	def __init__(self):
@@ -549,3 +533,20 @@ def main(args):
 	return 0
 
 
+if __name__ == "__main__":
+	
+	if isAndroid == True:
+		try:
+			options, source, destination = extras['%options'], extras['%source'], extras['%destination']
+		except:
+			#default options for testing
+			options, source, destination = '-tr', '/sdcard/scripts', '/sdcard/scripts' + str(random.randint(1, 100))
+		sys.exit(main([options, source, destination]))
+	else:
+		#command line behaviour still usable I used on windows and linux
+		sys.exit(main(sys.argv[1:]))
+
+class rsync(object):#for imports, to test
+	def	__init__(self, args):
+	    main(args)
+	
