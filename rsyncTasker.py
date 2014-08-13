@@ -22,11 +22,11 @@ extras = []
 
 try:
     import android
-    isAd = True
+    isAndroid = True
     droid = android.Android()
     extras = droid.getIntent().result['extras']
 except :
-    isAd = False
+    isAndroid = False
 
 
 
